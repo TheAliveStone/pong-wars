@@ -15,7 +15,8 @@ class Game:
         # Sprite groups
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
-        self.player = Paddle(self.allSprites, self.paddleSprites)
+        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'])
+        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'])
 
 
     def run(self):
