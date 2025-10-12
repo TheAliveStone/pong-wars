@@ -15,9 +15,14 @@ class Game:
         # Sprite groups
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
-        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'])
-        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'])
+        
+        # right paddle is player-controlled; left paddle is opponent (no keyboard input)
+        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True)
+        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False)
+        self.ball = Ball(self.allSprites, POS['ball'])
 
+        # launch once at start
+        self.ball.launch()
 
     def run(self):
         while self.running:
@@ -28,13 +33,19 @@ class Game:
 
             # Update the sprites
             self.allSprites.update(dt)
+            
+            # Check out-of-bounds and relaunch only when a point is scored
+            if self.ball.rect.left > WINDOW_WIDTH:
+                self.ball.launch(direction_x=-1)
+            elif self.ball.rect.right < 0:
+                self.ball.launch(direction_x=1)
 
             # Draw everything
             self.displaySurface.fill(COLORS['bg'])
             self.allSprites.draw(self.displaySurface)
             pygame.display.flip()
 
-        # Quit pygame    
+        # Quit pygame
         pygame.quit()
 
 if __name__ == '__main__':
