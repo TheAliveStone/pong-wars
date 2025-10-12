@@ -2,13 +2,14 @@ import pygame
 from settings import *
 
 class Paddle(pygame.sprite.Sprite):
-    def __init__(self, groups, position, is_player=False):
+    def __init__(self, groups, position, isplayer=False):
         # add the sprite to any groups passed from Game()
-        super().__init__(groups)
+        super().__init__(*groups)
 
         # create a surface and fill it with the paddle color
         self.image = pygame.Surface(SIZE['paddle'], pygame.SRCALPHA)
         self.image.fill(pygame.Color(COLORS['paddle']))
+        self.isplayer = isplayer      
         self.direction = pygame.math.Vector2()
         # choose speed based on side (player on right gets player speed)
         cx, cy = position
@@ -41,7 +42,7 @@ class Paddle(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, groups, position):
         # add the sprite to any groups passed from Game()
-        super().__init__(groups)
+        super().__init__(*groups)
 
         # create a surface and fill it with the ball color
         self.image = pygame.Surface(SIZE['ball'], pygame.SRCALPHA)
