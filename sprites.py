@@ -18,9 +18,6 @@ class Paddle(pygame.sprite.Sprite):
         else:
             self.speed = SPEED.get('opponent', 300)
 
-        # flag to control whether this paddle reads keyboard input
-        self.is_player = is_player
-
         # ensure integer center coordinates (settings used / which may produce floats)
         # integer rect used by pygame's drawing/collision APIs
         self.rect = self.image.get_rect(center=(int(cx), int(cy)))
