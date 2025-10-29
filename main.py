@@ -16,10 +16,11 @@ class Game:
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
         
-        # right paddle is player-controlled; left paddle is opponent (no keyboard input)
-        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True)
-        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False)
-        self.ball = Ball(self.allSprites, POS['ball'])
+        # Create the ball first so we can pass it to paddles for simple AI
+        self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites)
+        # pass the ball instance into paddles so opponent AI can read ball.pos
+        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True, ball=self.ball)
+        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False, ball=self.ball)
 
         # launch once at start
         self.ball.launch()
@@ -33,12 +34,6 @@ class Game:
 
             # Update the sprites
             self.allSprites.update(dt)
-            
-            # Check out-of-bounds and relaunch only when a point is scored
-            if self.ball.rect.left > WINDOW_WIDTH:
-                self.ball.launch(direction_x=-1)
-            elif self.ball.rect.right < 0:
-                self.ball.launch(direction_x=1)
 
             # Draw everything
             self.displaySurface.fill(COLORS['bg'])
