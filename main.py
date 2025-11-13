@@ -19,7 +19,8 @@ class Game:
         # right paddle is player-controlled; left paddle is opponent (no keyboard input)
         self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True)
         self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False)
-        self.ball = Ball(self.allSprites, POS['ball'])
+        # pass groups as a tuple so sprites' super().__init__(*groups) receives Group objects
+        self.ball = Ball((self.allSprites,), POS['ball'])
 
         # launch once at start
         self.ball.launch()
