@@ -16,6 +16,13 @@ class Game:
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
         
+        # Font
+        self.font = pygame.font.Font(join("assets", "AlfaSlabOne-Regular.ttf"), 20)
+        self.playerScoreSurf = self.font.render("Test", True, pygame.Color('white'))
+        self.opponentScoreSurf = self.font.render("Test", True, pygame.Color('white'))
+        self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
+        self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
+        
         # Create the ball first so we can pass it to paddles for simple AI
         self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites)
         # pass the ball instance into paddles so opponent AI can read ball.pos
@@ -38,6 +45,8 @@ class Game:
             # Draw everything
             self.displaySurface.fill(COLORS['bg'])
             self.allSprites.draw(self.displaySurface)
+            self.displaySurface.blit(self.playerScoreSurf, self.playerScoreRect)
+            self.displaySurface.blit(self.opponentScoreSurf, self.opponentScoreRect)
             pygame.display.flip()
 
         # Quit pygame

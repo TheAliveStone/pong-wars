@@ -1,5 +1,6 @@
 import pygame
 from settings import *
+import random
 
 class Paddle(pygame.sprite.Sprite):
     def __init__(self, groups, position, is_player=False, ball=None):
@@ -78,7 +79,8 @@ class Ball(pygame.sprite.Sprite):
         # collide with any paddle in the paddle group
         if self.paddles and pygame.sprite.spritecollideany(self, self.paddles):
             self.direction.x *= -1
-        
+            self.direction.y += random.uniform(-0.3, 0.3)  # add some vertical variation
+            self.speed *= 1.05  # increase speed slightly on paddle hit
         
 
     def launch(self, direction_x=None, angle=None):
@@ -88,6 +90,7 @@ class Ball(pygame.sprite.Sprite):
         """
         self.pos = pygame.math.Vector2(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         self.rect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+        self.speed = SPEED.get('ball', 300) # reset speed
         import random
         if direction_x is None:
             direction_x = random.choice((-1, 1))
