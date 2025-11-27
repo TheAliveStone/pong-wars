@@ -20,7 +20,7 @@ class Paddle(pygame.sprite.Sprite):
             self.speed = SPEED.get('player', 300)
         else:
             self.speed = SPEED.get('opponent', 300)
-
+            
         self.rect = self.image.get_rect(center=(int(cx), int(cy)))
         # float position for smooth sub-pixel movement
         self.pos = pygame.math.Vector2(self.rect.center)
@@ -58,6 +58,8 @@ class Ball(pygame.sprite.Sprite):
         self.speed = SPEED.get('ball', 300)
         # reference to paddle sprites group for collision checks
         self.paddles = paddles
+        self.playerScore = 0
+        self.opponentScore = 0
  
         # ensure integer center coordinates (settings used / which may produce floats)
         cx, cy = position
@@ -66,6 +68,7 @@ class Ball(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(self.rect.center)
  
     def update(self, dt=0):
+        """Update the ball's position, handle wall and paddle collisions, and manage scoring."""
         # update float position
         self.pos += self.direction * self.speed * dt
         self.rect.center = (round(self.pos.x), round(self.pos.y))
@@ -74,13 +77,16 @@ class Ball(pygame.sprite.Sprite):
         # ball went off left/right -> relaunch from center toward appropriate side
         if self.rect.left <= 0:
             self.launch(direction_x=1)
+            self.opponentScore += 1
         elif self.rect.right >= WINDOW_WIDTH:
             self.launch(direction_x=-1)
+            self.playerScore += 1
         # collide with any paddle in the paddle group
         if self.paddles and pygame.sprite.spritecollideany(self, self.paddles):
             self.direction.x *= -1
             self.direction.y += random.uniform(-0.3, 0.3)  # add some vertical variation
-            self.speed *= 1.05  # increase speed slightly on paddle hit
+            self.speed = min(self.speed + 5, 600)  # increase speed, cap at 600
+            self.speed += 5  # increase speed slightly on paddle hit
         
 
     def launch(self, direction_x=None, angle=None):
@@ -91,7 +97,6 @@ class Ball(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         self.rect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
         self.speed = SPEED.get('ball', 300) # reset speed
-        import random
         if direction_x is None:
             direction_x = random.choice((-1, 1))
         if angle is None:

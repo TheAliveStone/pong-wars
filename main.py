@@ -16,37 +16,47 @@ class Game:
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
         
-        # Font
-        self.font = pygame.font.Font(join("assets", "AlfaSlabOne-Regular.ttf"), 20)
-        self.playerScoreSurf = self.font.render("Test", True, pygame.Color('white'))
-        self.opponentScoreSurf = self.font.render("Test", True, pygame.Color('white'))
-        self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
-        self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
-        
-        # Create the ball first so we can pass it to paddles for simple AI
+        # Create the ball first so we can pass it to paddles for simple AI.
+        # The paddle needs the ball reference to track the ball's position for AI logic (e.g., opponent movement).
         self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites)
         # pass the ball instance into paddles so opponent AI can read ball.pos
         self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True, ball=self.ball)
         self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False, ball=self.ball)
 
+        # Font (create once; render score surfaces each frame)
+        self.font = pygame.font.Font(join("assets", "AlfaSlabOne-Regular.ttf"), 20)
         # launch once at start
+        self.ball.launch()
+
+        # Middle line (create once; reuse each frame)
+        self.middleLineColor = (*pygame.Color('white')[:3], 128)  # RGBA with alpha for transparency
+        self.middleLineSurf = pygame.Surface((4, WINDOW_HEIGHT), pygame.SRCALPHA)
+        self.middleLineSurf.fill(self.middleLineColor)
         self.ball.launch()
 
     def run(self):
         while self.running:
-            dt = self.clock.tick(60) / 1000
+            delta_time = self.clock.tick(60) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            # Update the sprites
-            self.allSprites.update(dt)
+            # Update the sprites once per frame
+            self.allSprites.update(delta_time)
+
+            # update score surfaces each frame so the display reflects changes
+            self.playerScoreSurf = self.font.render(str(self.ball.playerScore), True, pygame.Color('white'))
+            self.opponentScoreSurf = self.font.render(str(self.ball.opponentScore), True, pygame.Color('white'))
+            self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
+            self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
+            self.middleLineSurf.fill(self.middleLineColor)
 
             # Draw everything
             self.displaySurface.fill(COLORS['bg'])
             self.allSprites.draw(self.displaySurface)
             self.displaySurface.blit(self.playerScoreSurf, self.playerScoreRect)
             self.displaySurface.blit(self.opponentScoreSurf, self.opponentScoreRect)
+            self.displaySurface.blit(self.middleLineSurf, (WINDOW_WIDTH // 2 - 2, 0))
             pygame.display.flip()
 
         # Quit pygame
