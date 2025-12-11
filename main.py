@@ -2,7 +2,20 @@ import pygame
 from random import randint, uniform
 from os.path import join
 from settings import *
-from sprites import *
+from sprites import Paddle, Ball
+
+class Scoreboard:
+    """Encapsulates score state and mutation to keep Ball/Game decoupled."""
+    def __init__(self):
+        self.player = 0
+        self.opponent = 0
+
+    def player_scored(self):
+        self.player += 1
+
+    def opponent_scored(self):
+        self.opponent += 1
+
 
 class Game:
     def __init__(self):
@@ -15,23 +28,26 @@ class Game:
         # Sprite groups
         self.allSprites = pygame.sprite.Group()
         self.paddleSprites = pygame.sprite.Group()
-        
+
+        # Scoreboard manages scores
+        self.scoreboard = Scoreboard()
+
         # Create the ball first so we can pass it to paddles for simple AI.
         # The paddle needs the ball reference to track the ball's position for AI logic (e.g., opponent movement).
-        self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites)
+        self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites, scoreboard=self.scoreboard)
         # pass the ball instance into paddles so opponent AI can read ball.pos
         self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True, ball=self.ball)
         self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False, ball=self.ball)
 
         # Font (create once; render score surfaces each frame)
         self.font = pygame.font.Font(join("assets", "AlfaSlabOne-Regular.ttf"), 20)
-        # launch once at start
+        # launch once at start (preserve prior behavior)
         self.ball.launch()
-
-        # Middle line (create once; reuse each frame)
+        # middle line (create once; reuse each frame)
         self.middleLineColor = (*pygame.Color('white')[:3], 128)  # RGBA with alpha for transparency
         self.middleLineSurf = pygame.Surface((4, WINDOW_HEIGHT), pygame.SRCALPHA)
         self.middleLineSurf.fill(self.middleLineColor)
+        # second launch preserved from original behavior
         self.ball.launch()
 
     def run(self):
@@ -45,8 +61,8 @@ class Game:
             self.allSprites.update(delta_time)
 
             # update score surfaces each frame so the display reflects changes
-            self.playerScoreSurf = self.font.render(str(self.ball.playerScore), True, pygame.Color('white'))
-            self.opponentScoreSurf = self.font.render(str(self.ball.opponentScore), True, pygame.Color('white'))
+            self.playerScoreSurf = self.font.render(str(self.scoreboard.player), True, pygame.Color('white'))
+            self.opponentScoreSurf = self.font.render(str(self.scoreboard.opponent), True, pygame.Color('white'))
             self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
             self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
             self.middleLineSurf.fill(self.middleLineColor)
