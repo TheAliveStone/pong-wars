@@ -3,6 +3,7 @@ from random import randint, uniform
 from os.path import join
 from settings import *
 from sprites import *
+from ui import *
 
 class Game:
     def __init__(self):
@@ -63,4 +64,12 @@ class Game:
         pygame.quit()
 
 if __name__ == '__main__':
-    Game().run()
+    # show main menu first; only start game if user chooses "Start"
+    pygame.init()
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    clock = pygame.time.Clock()
+    start_game = main_menu(screen, clock, title_text="Pong Wars")
+    if start_game:
+        Game().run()
+    else:
+        pygame.quit()
