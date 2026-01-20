@@ -67,7 +67,6 @@ class Paddle(pygame.sprite.Sprite):
             self.ai_move()
         self.move(dt)
 
-
 class Ball(pygame.sprite.Sprite):
     def __init__(self, groups, position, paddles=None, scoreboard=None):
         # add the sprite to any groups passed from Game
@@ -133,8 +132,7 @@ class Ball(pygame.sprite.Sprite):
             self.bounce_horizontal()
             self.direction.y += random.uniform(-0.3, 0.3)  # small vertical variation
             # preserve original double-increment behavior (unchanged)
-            self.speed = min(self.speed + 5, 600)
-            self.speed += 5
+            self.speed = min(self.speed + 10, 600)
 
     def bounce_horizontal(self):
         """Invert horizontal direction component."""
@@ -173,3 +171,14 @@ class Ball(pygame.sprite.Sprite):
         if angle is None:
             angle = random.uniform(-0.5, 0.5)
         self.direction = pygame.math.Vector2(direction_x, angle).normalize()
+
+class Scoreboard:
+    def __init__(self):
+        self.player = 0
+        self.opponent = 0
+
+    def player_scored(self):
+        self.player += 1
+
+    def opponent_scored(self):
+        self.opponent += 1

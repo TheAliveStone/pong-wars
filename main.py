@@ -3,10 +3,11 @@ from random import randint, uniform
 from os.path import join
 from settings import *
 from sprites import *
+from ui import main_menu
 
 class Game:
     def __init__(self):
-        pygame.init()
+        # pygame.init()  # Removed: handled in if __name__
         self.displaySurface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()
         pygame.display.set_caption("Pong Wars")
@@ -34,8 +35,8 @@ class Game:
         self.middleLineColor = (*pygame.Color('white')[:3], 128)  # RGBA with alpha for transparency
         self.middleLineSurf = pygame.Surface((4, WINDOW_HEIGHT), pygame.SRCALPHA)
         self.middleLineSurf.fill(self.middleLineColor)
-        # second launch preserved from original behavior
-        self.ball.launch()
+        # second launch preserved from original behavior  # Removed: duplicate
+
 
     def run(self):
         while self.running:
