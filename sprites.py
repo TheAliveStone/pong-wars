@@ -3,12 +3,21 @@ from settings import *
 import random
 
 class Paddle(pygame.sprite.Sprite):
-    def __init__(self, groups, position, is_player=False, ball=None):
+    def __init__(self, groups, position, is_player=False, ball=None, difficulty_settings=None):
         # add the sprite to any groups passed from Game
         super().__init__(*groups)
 
+        # Load difficulty settings (default to normal preset)
+        if difficulty_settings is None:
+            from settings import DIFFICULTY_PRESETS
+            difficulty_settings = DIFFICULTY_PRESETS['normal']
+        self.difficulty_settings = difficulty_settings
+        self.ai_error = difficulty_settings.get('ai_error', 0.10)
+
         # create a surface and fill it with the paddle color
-        self.image = pygame.Surface(SIZE['paddle'], pygame.SRCALPHA)
+        # Use paddle_height from difficulty settings if available
+        paddle_height = difficulty_settings.get('paddle_height', SIZE['paddle'][1])
+        self.image = pygame.Surface((SIZE['paddle'][0], paddle_height), pygame.SRCALPHA)
         self.image.fill(pygame.Color(COLORS['paddle']))
         self.is_player = is_player
         # reference to the Ball instance (may be None)
@@ -17,9 +26,9 @@ class Paddle(pygame.sprite.Sprite):
         # choose speed based on side (player on right gets player speed)
         cx, cy = position
         if cx > WINDOW_WIDTH / 2:
-            self.speed = SPEED.get('player', 300)
+            self.speed = difficulty_settings.get('player', 300)
         else:
-            self.speed = SPEED.get('opponent', 300)
+            self.speed = difficulty_settings.get('opponent', 300)
 
         self.rect = self.image.get_rect(center=(int(cx), int(cy)))
         # float position for smooth sub-pixel movement
@@ -36,13 +45,18 @@ class Paddle(pygame.sprite.Sprite):
         self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
 
     def ai_move(self):
-        """Simple AI: follow the ball vertically if available."""
+        """Simple AI: follow the ball vertically if available, with difficulty-based error."""
         if not self.ball:
             self.direction.y = 0
             return
-        if self.ball.pos.y < self.pos.y:
+        
+        # Apply AI error margin based on difficulty
+        error = random.uniform(-self.ai_error, self.ai_error)
+        target_y = self.ball.pos.y + error
+        
+        if target_y < self.pos.y:
             self.direction.y = -1
-        elif self.ball.pos.y > self.pos.y:
+        elif target_y > self.pos.y:
             self.direction.y = 1
         else:
             self.direction.y = 0
@@ -68,7 +82,7 @@ class Paddle(pygame.sprite.Sprite):
         self.move(dt)
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, groups, position, paddles=None, scoreboard=None):
+    def __init__(self, groups, position, paddles=None, scoreboard=None, difficulty_settings=None):
         # add the sprite to any groups passed from Game
         super().__init__(*groups)
 
@@ -76,11 +90,18 @@ class Ball(pygame.sprite.Sprite):
         self.image = pygame.Surface(SIZE['ball'], pygame.SRCALPHA)
         self.image.fill(pygame.Color(COLORS['ball']))
         self.direction = pygame.math.Vector2()
-        self.speed = SPEED.get('ball', 300)
         # reference to paddle sprites group for collision checks
         self.paddles = paddles
         # optional scoreboard object (keeps backward compatibility with direct score attrs)
         self.scoreboard = scoreboard
+        
+        # Load difficulty settings (default to normal preset)
+        if difficulty_settings is None:
+            from settings import DIFFICULTY_PRESETS
+            difficulty_settings = DIFFICULTY_PRESETS['normal']
+        self.difficulty_settings = difficulty_settings
+        self.speed = difficulty_settings.get('ball', 300)
+        self.ball_accel = difficulty_settings.get('ball_accel', 5)
 
         # keep numeric scores for compatibility with existing code
         self.playerScore = 0
@@ -131,8 +152,8 @@ class Ball(pygame.sprite.Sprite):
         if self.paddles and pygame.sprite.spritecollideany(self, self.paddles):
             self.bounce_horizontal()
             self.direction.y += random.uniform(-0.3, 0.3)  # small vertical variation
-            # preserve original double-increment behavior (unchanged)
-            self.speed = min(self.speed + 10, 600)
+            # Use difficulty-based acceleration
+            self.speed = min(self.speed + self.ball_accel, 600)
 
     def bounce_horizontal(self):
         """Invert horizontal direction component."""
@@ -165,7 +186,7 @@ class Ball(pygame.sprite.Sprite):
         angle: optional vertical component (y). If None, pick small random variation.
         """
         self.reset_position()
-        self.speed = SPEED.get('ball', 300)  # reset speed
+        self.speed = self.difficulty_settings.get('ball', 300)  # reset speed from difficulty
         if direction_x is None:
             direction_x = random.choice((-1, 1))
         if angle is None:
