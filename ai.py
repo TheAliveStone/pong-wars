@@ -28,6 +28,7 @@ class EasyAI:
         self.inaccuracy = inaccuracy
         self.elapsed_time = 0.0
         self.last_direction = 0.0
+        self.last_predicted_y = 0.0
 
     def reset(self):
         """Reset internal state (e.g., reaction timer)."""
@@ -42,6 +43,7 @@ class EasyAI:
 
         # Calculate ball position and distance
         target_y = ball.pos.y + random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        self.last_predicted_y = target_y  # Store for debugging
         delta = target_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:
@@ -76,6 +78,7 @@ class MediumAI:
         self.inaccuracy = inaccuracy
         self.elapsed_time = 0.0
         self.last_direction = 0.0
+        self.last_predicted_y = 0.0
 
     def reset(self):
         """Reset internal state."""
@@ -107,6 +110,7 @@ class MediumAI:
         # Calculate ball position and distance
         predicted_y = self._predict_landing_y_no_bounces(paddle.pos.x, ball)
         predicted_y += random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        self.last_predicted_y = predicted_y  # Store for debugging
         delta = predicted_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:
@@ -139,6 +143,7 @@ class HardAI:
         self.max_simulation_steps = max_simulation_steps
         self.elapsed_time = 0.0
         self.last_direction = 0.0
+        self.last_predicted_y = 0.0
 
     def reset(self):
         """Reset internal state."""
@@ -197,6 +202,7 @@ class HardAI:
         # Calculate ball position and distance
         predicted_y = self._simulate_to_paddle_x(paddle.pos.x, ball)
         predicted_y += random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        self.last_predicted_y = predicted_y  # Store for debugging
         delta = predicted_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:

@@ -18,7 +18,7 @@ class Game:
         from settings import DIFFICULTY_PRESETS
         self.difficulty_settings = DIFFICULTY_PRESETS.get(difficulty, DIFFICULTY_PRESETS['normal'])
         
-        # Debug mode
+        # Debug mode flag (can be toggled with 'D' key during gameplay)
         self.debug_mode = False  # Set to True to enable debug features (e.g., predicted ball landing spot)
 
         # Sprite groups
@@ -53,7 +53,7 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_F4:
+                    if event.key == pygame.K_d:
                         self.debug_mode = not self.debug_mode  # Toggle debug mode
 
             # Check for first-to-10 win condition
@@ -77,6 +77,17 @@ class Game:
             # Draw everything
             self.displaySurface.fill(COLORS['bg'])
             self.allSprites.draw(self.displaySurface)
+            if self.debug_mode:
+                # Display Ai's last predicted landing spot, current paddle direction and reaction timer for debugging
+                if self.opponent.ai:
+                    predicted_y = self.opponent.ai.last_predicted_y
+                    pygame.draw.circle(self.displaySurface, pygame.Color('red'), (int(self.opponent.pos.x), int(predicted_y)), 5)
+                    # Display reaction timer
+                    reaction_time_text = self.font.render(f"Reaction Time: {self.opponent.ai.elapsed_time:.2f}s", True, pygame.Color('yellow'))
+                    self.displaySurface.blit(reaction_time_text, (10, WINDOW_HEIGHT - 30))
+                    # Display current direction
+                    direction_text = self.font.render(f"Direction: {self.opponent.direction.y}", True, pygame.Color('yellow'))
+                    self.displaySurface.blit(direction_text, (10, WINDOW_HEIGHT - 60))
             self.displaySurface.blit(self.playerScoreSurf, self.playerScoreRect)
             self.displaySurface.blit(self.opponentScoreSurf, self.opponentScoreRect)
             self.displaySurface.blit(self.middleLineSurf, (WINDOW_WIDTH // 2 - 2, 0))
