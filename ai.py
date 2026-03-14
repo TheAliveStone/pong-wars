@@ -27,6 +27,7 @@ class EasyAI:
         self.max_speed_factor = max_speed_factor
         self.inaccuracy = inaccuracy
         self.elapsed_time = 0.0
+        self.last_direction = 0.0
 
     def reset(self):
         """Reset internal state (e.g., reaction timer)."""
@@ -34,24 +35,24 @@ class EasyAI:
 
     def decide(self, paddle, ball, dt, game_state=None):
         """AI algorithm that decides which direction to travel in based on ball position."""
-        # Starts a timer. Paddle doesn't move until reaction time
+        # Increment timer; only update direction after reaction_time
         self.elapsed_time += dt
         if self.elapsed_time < self.reaction_time:
-            return 0
-        self.elapsed_time = 0
-        
+            return self.last_direction  # Continue last direction during reaction delay
+
         # Calculate ball position and distance
         target_y = ball.pos.y + random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
         delta = target_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:
-            return 0
-        
-        # Returns the paddles direction
-        if delta < 0:
-            return -1
-        elif delta > 0:
-            return 1
+            self.last_direction = 0
+        elif delta < 0:
+            self.last_direction = -1
+        else:
+            self.last_direction = 1
+
+        self.elapsed_time = 0  # Reset timer after making a decision
+        return self.last_direction
 
 
 
@@ -74,6 +75,7 @@ class MediumAI:
         self.prediction_horizon_limit = prediction_horizon_limit
         self.inaccuracy = inaccuracy
         self.elapsed_time = 0.0
+        self.last_direction = 0.0
 
     def reset(self):
         """Reset internal state."""
@@ -93,7 +95,6 @@ class MediumAI:
         predicted_y = ball.pos.y + (ball.direction.y * ball.speed * time_to_reach)
         return predicted_y
 
-
     def decide(self, paddle, ball, dt, game_state=None):
         """
         AI algorithm that decides which direction to travel in based on ball position.
@@ -101,8 +102,7 @@ class MediumAI:
         # Starts a timer. Paddle doesn't move until reaction time
         self.elapsed_time += dt
         if self.elapsed_time < self.reaction_time:
-            return 0
-        self.elapsed_time = 0
+            return self.last_direction  # Continue last direction during reaction delay
         
         # Calculate ball position and distance
         predicted_y = self._predict_landing_y_no_bounces(paddle.pos.x, ball)
@@ -110,13 +110,14 @@ class MediumAI:
         delta = predicted_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:
-            return 0
-        
-        # Returns the paddles direction
-        if delta < 0:
-            return -1
-        elif delta > 0:
-            return 1
+            self.last_direction = 0
+        elif delta < 0:
+            self.last_direction = -1
+        else:
+            self.last_direction = 1
+
+        self.elapsed_time = 0  # Reset timer after making a decision
+        return self.last_direction
 
 
 class HardAI:
@@ -137,6 +138,7 @@ class HardAI:
         self.inaccuracy = inaccuracy
         self.max_simulation_steps = max_simulation_steps
         self.elapsed_time = 0.0
+        self.last_direction = 0.0
 
     def reset(self):
         """Reset internal state."""
@@ -190,8 +192,7 @@ class HardAI:
         # Starts a timer. Paddle doesn't move until reaction time
         self.elapsed_time += dt
         if self.elapsed_time < self.reaction_time:
-            return 0
-        self.elapsed_time = 0
+            return self.last_direction  # Continue last direction during reaction delay
         
         # Calculate ball position and distance
         predicted_y = self._simulate_to_paddle_x(paddle.pos.x, ball)
@@ -199,10 +200,11 @@ class HardAI:
         delta = predicted_y - paddle.pos.y
         # If too close, don't move to reduce jittering
         if abs(delta) < 5:
-            return 0
-        
-        # Returns the paddles direction
-        if delta < 0:
-            return -1
-        elif delta > 0:
-            return 1
+            self.last_direction = 0
+        elif delta < 0:
+            self.last_direction = -1
+        else:
+            self.last_direction = 1
+
+        self.elapsed_time = 0  # Reset timer after making a decision
+        return self.last_direction

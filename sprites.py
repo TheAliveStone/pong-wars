@@ -1,9 +1,10 @@
 import pygame
 from settings import *
 import random
+from ai import *
 
 class Paddle(pygame.sprite.Sprite):
-    def __init__(self, groups, position, is_player=False, ball=None, difficulty_settings=None):
+    def __init__(self, groups, position, is_player=False, ball=None, difficulty_settings=None, difficulty='normal'):
         # add the sprite to any groups passed from Game
         super().__init__(*groups)
 
@@ -13,6 +14,14 @@ class Paddle(pygame.sprite.Sprite):
             difficulty_settings = DIFFICULTY_PRESETS['normal']
         self.difficulty_settings = difficulty_settings
         self.ai_error = difficulty_settings.get('ai_error', 0.10)
+        self.ai = None
+        if not is_player:
+            if difficulty == 'easy':
+                self.ai = EasyAI(reaction_time=difficulty_settings.get('reaction_time', 0.3), inaccuracy=self.ai_error)
+            elif difficulty == 'normal':
+                self.ai = MediumAI(reaction_time=difficulty_settings.get('reaction_time', 0.15), inaccuracy=self.ai_error)
+            elif difficulty == 'hard':
+                self.ai = HardAI(reaction_time=difficulty_settings.get('reaction_time', 0.05), inaccuracy=self.ai_error)
 
         # create a surface and fill it with the paddle color
         # Use paddle_height from difficulty settings if available
@@ -44,22 +53,11 @@ class Paddle(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
 
-    def ai_move(self):
-        """Simple AI: follow the ball vertically if available, with difficulty-based error."""
-        if not self.ball:
-            self.direction.y = 0
-            return
-        
-        # Apply AI error margin based on difficulty
-        error = random.uniform(-self.ai_error, self.ai_error)
-        target_y = self.ball.pos.y + error
-        
-        if target_y < self.pos.y:
-            self.direction.y = -1
-        elif target_y > self.pos.y:
-            self.direction.y = 1
-        else:
-            self.direction.y = 0
+    def ai_move(self, dt=0):
+        """Use attached AI strategy to set vertical direction for opponent paddle."""
+        if self.ai and self.ball:
+            self.direction.y = self.ai.decide(self, self.ball, dt)  # dt can be passed if needed for timing
+            
 
     def move(self, dt):
         """Apply movement based on current direction and speed, update rect."""
@@ -78,7 +76,7 @@ class Paddle(pygame.sprite.Sprite):
         if self.is_player:
             self.handle_input()
         else:
-            self.ai_move()
+            self.ai_move(dt)
         self.move(dt)
 
 class Ball(pygame.sprite.Sprite):

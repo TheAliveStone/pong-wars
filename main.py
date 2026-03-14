@@ -4,6 +4,7 @@ from os.path import join
 from settings import *
 from sprites import *
 from ui import main_menu, difficulty_menu, game_over_menu
+from ai import EasyAI, MediumAI, HardAI
 
 class Game:
     def __init__(self, difficulty='normal'):
@@ -16,6 +17,9 @@ class Game:
         # Load difficulty settings
         from settings import DIFFICULTY_PRESETS
         self.difficulty_settings = DIFFICULTY_PRESETS.get(difficulty, DIFFICULTY_PRESETS['normal'])
+        
+        # Debug mode
+        self.debug_mode = False  # Set to True to enable debug features (e.g., predicted ball landing spot)
 
         # Sprite groups
         self.allSprites = pygame.sprite.Group()
@@ -28,8 +32,8 @@ class Game:
         # The paddle needs the ball reference to track the ball's position for AI logic (e.g., opponent movement).
         self.ball = Ball((self.allSprites,), POS['ball'], paddles=self.paddleSprites, scoreboard=self.scoreboard, difficulty_settings=self.difficulty_settings)
         # pass the ball instance into paddles so opponent AI can read ball.pos
-        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True, ball=self.ball, difficulty_settings=self.difficulty_settings)
-        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False, ball=self.ball, difficulty_settings=self.difficulty_settings)
+        self.player = Paddle((self.allSprites, self.paddleSprites), POS['player'], is_player=True, ball=self.ball, difficulty_settings=self.difficulty_settings, difficulty=difficulty)
+        self.opponent = Paddle((self.allSprites, self.paddleSprites), POS['opponent'], is_player=False, ball=self.ball, difficulty_settings=self.difficulty_settings, difficulty=difficulty)
 
         # Font (create once; render score surfaces each frame)
         self.font = pygame.font.Font(join("assets", "AlfaSlabOne-Regular.ttf"), 20)
@@ -48,6 +52,9 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_F4:
+                        self.debug_mode = not self.debug_mode  # Toggle debug mode
 
             # Check for first-to-10 win condition
             if self.scoreboard.player >= 10:
