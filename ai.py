@@ -30,40 +30,29 @@ class EasyAI:
 
     def reset(self):
         """Reset internal state (e.g., reaction timer)."""
-        # TODO: Reset elapsed_time to 0 so next frame AI reacts fresh
-        pass
+        self.elapsed_time = 0.0
 
     def decide(self, paddle, ball, dt, game_state=None):
-        """
-        Return vertical movement intent: -1 (up), 0 (idle), +1 (down).
+        """AI algorithm that decides which direction to travel in based on ball position."""
+        # Starts a timer. Paddle doesn't move until reaction time
+        self.elapsed_time += dt
+        if self.elapsed_time < self.reaction_time:
+            return 0
+        self.elapsed_time = 0
+        
+        # Calculate ball position and distance
+        target_y = ball.pos.y + random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        delta = target_y - paddle.pos.y
+        # If too close, don't move to reduce jittering
+        if abs(delta) < 5:
+            return 0
+        
+        # Returns the paddles direction
+        if delta < 0:
+            return -1
+        elif delta > 0:
+            return 1
 
-        PSEUDOCODE:
-        1. Accumulate elapsed_time += dt
-        2. If elapsed_time < reaction_time: return 0  # Simulate delayed reaction
-        3. Reset elapsed_time to 0 (or small overshoot) for next cycle
-        4. Compute noisy target Y:
-           target_y = ball.pos.y + random.uniform(-inaccuracy, inaccuracy) * paddle.rect.height
-        5. Compute delta = target_y - paddle.pos.y
-        6. If abs(delta) < small deadzone (e.g., 5 pixels): return 0  # Stop jittering
-        7. Determine direction based on sign(delta):
-           if delta < 0: desired_direction = -1
-           elif delta > 0: desired_direction = +1
-           else: desired_direction = 0
-        8. Return desired_direction
-
-        Args:
-            paddle: Paddle instance (has .pos.y, .rect.height, .speed)
-            ball: Ball instance (has .pos.y)
-            dt: Delta time (seconds) since last frame
-            game_state: Optional dict with game context (unused in EasyAI)
-
-        Returns:
-            int: -1, 0, or +1
-        """
-        # TODO: Implement reaction delay accumulation
-        # TODO: Apply noise to target position
-        # TODO: Compute delta and return direction intent
-        pass
 
 
 class MediumAI:
@@ -88,60 +77,46 @@ class MediumAI:
 
     def reset(self):
         """Reset internal state."""
-        # TODO: Reset elapsed_time
-        pass
+        self.elapsed_time = 0.0
 
     def _predict_landing_y_no_bounces(self, paddle_x, ball):
         """
-        Estimate Y position of ball when it reaches paddle_x (horizontally).
-        Does NOT account for top/bottom wall reflections (unlike HardAI).
-
-        PSEUDOCODE:
-        1. If ball.direction.x == 0: return ball.pos.y  # No horizontal movement; can't predict
-        2. Compute time_to_reach = (paddle_x - ball.pos.x) / (ball.direction.x * ball.speed)
-           - If time_to_reach < 0: ball is moving away; return current ball.pos.y or handle gracefully
-        3. Clamp time_to_reach to [0, self.prediction_horizon_limit]
-        4. Estimate: predicted_y = ball.pos.y + (ball.direction.y * ball.speed * time_to_reach)
-        5. Return predicted_y (may be outside [0, WINDOW_HEIGHT]; that's OK for this simple version)
-
-        Args:
-            paddle_x: X coordinate of paddle (center)
-            ball: Ball instance
-
-        Returns:
-            float: Predicted Y position
+        Calculates the time for the ball to reach the paddle and returns the y position of the ball when it reaches it
         """
-        # TODO: Compute time until ball reaches paddle_x
-        # TODO: Estimate landing Y using linear extrapolation (no bounces)
-        pass
+        if ball.direction.x == 0:
+            return ball.pos.y
+        time_to_reach = (paddle_x - ball.pos.x) / (ball.direction.x * ball.speed)
+        if time_to_reach < 0:
+            # Ball is moving away from paddle; return current Y or handle gracefully
+            return ball.pos.y
+        time_to_reach = min(time_to_reach, self.prediction_horizon_limit)
+        predicted_y = ball.pos.y + (ball.direction.y * ball.speed * time_to_reach)
+        return predicted_y
+
 
     def decide(self, paddle, ball, dt, game_state=None):
         """
-        Return vertical movement intent based on predicted landing position.
-
-        PSEUDOCODE:
-        1. Accumulate elapsed_time += dt
-        2. If elapsed_time < reaction_time: return 0
-        3. Reset elapsed_time
-        4. Call predicted_y = self._predict_landing_y_no_bounces(paddle.pos.x, ball)
-        5. Add small noise: predicted_y += random.uniform(-inaccuracy, inaccuracy) * paddle.rect.height
-        6. Compute delta = predicted_y - paddle.pos.y
-        7. If abs(delta) < deadzone: return 0
-        8. Return sign(delta) as direction
-
-        Args:
-            paddle: Paddle instance
-            ball: Ball instance
-            dt: Delta time (seconds)
-            game_state: Optional context
-
-        Returns:
-            int: -1, 0, or +1
+        AI algorithm that decides which direction to travel in based on ball position.
         """
-        # TODO: Implement reaction delay
-        # TODO: Predict landing Y (linear, no wall bounces)
-        # TODO: Add noise and return direction
-        pass
+        # Starts a timer. Paddle doesn't move until reaction time
+        self.elapsed_time += dt
+        if self.elapsed_time < self.reaction_time:
+            return 0
+        self.elapsed_time = 0
+        
+        # Calculate ball position and distance
+        predicted_y = self._predict_landing_y_no_bounces(paddle.pos.x, ball)
+        predicted_y += random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        delta = predicted_y - paddle.pos.y
+        # If too close, don't move to reduce jittering
+        if abs(delta) < 5:
+            return 0
+        
+        # Returns the paddles direction
+        if delta < 0:
+            return -1
+        elif delta > 0:
+            return 1
 
 
 class HardAI:
@@ -165,76 +140,69 @@ class HardAI:
 
     def reset(self):
         """Reset internal state."""
-        # TODO: Reset elapsed_time
-        pass
+        self.elapsed_time = 0.0
 
     def _simulate_to_paddle_x(self, paddle_x, ball):
         """
         Simulate ball trajectory including top/bottom wall reflections.
         Returns the estimated Y position when ball reaches paddle_x.
-
-        PSEUDOCODE (high level):
-        1. Copy ball's current state: pos_x, pos_y, dir_x, dir_y; use ball.speed
-        2. Loop (i = 0; i < max_simulation_steps; i++):
-            a. If dir_x == 0: return pos_y  # Ball moving purely vertically; can't reach paddle_x
-            b. Compute time_to_paddle_x = (paddle_x - pos_x) / (dir_x * ball.speed)
-            c. If time_to_paddle_x >= 0:
-               - Compute y_at_paddle = pos_y + (dir_y * ball.speed * time_to_paddle_x)
-               - Check if y_at_paddle stays within [0, WINDOW_HEIGHT]:
-                   * Yes: return y_at_paddle  # SUCCESS
-                   * No: Ball will hit top/bottom before reaching paddle
-            d. If ball will hit wall before paddle_x:
-               - Compute time_to_wall = time until pos_y hits 0 or WINDOW_HEIGHT
-               - Move ball forward: pos_x += dir_x * ball.speed * time_to_wall
-               -                   pos_y += dir_y * ball.speed * time_to_wall
-               - Clamp pos_y to [0, WINDOW_HEIGHT] (wall collision)
-               - Reflect: dir_y = -dir_y
-               - Continue loop (process next segment)
-            e. Else (ball moving away from paddle_x):
-               - return pos_y or handle bounce-back logic
-        3. Fallback: return pos_y if loop exhausted without reaching paddle
-
-        This logic requires careful handling of edge cases:
-        - Ball speed may be 0 (avoid division by zero)
-        - Multiple wall bounces may occur
-        - time_to_wall calculation must account for current direction
-
-        Args:
-            paddle_x: X coordinate of target paddle
-            ball: Ball instance
-
-        Returns:
-            float: Estimated Y position when ball reaches paddle_x (with bounces)
         """
-        # TODO: Implement step-by-step ball trajectory simulation
-        # TODO: Handle wall reflections (flip dir_y when hitting top/bottom)
-        # TODO: Return predicted Y when ball reaches paddle_x
-        pass
+        pos_x = ball.pos.x
+        pos_y = ball.pos.y
+        dir_x = ball.direction.x
+        dir_y = ball.direction.y
+        
+        for i in range(self.max_simulation_steps):
+            if dir_x == 0:
+                return pos_y # Ball moving vertically only, can't reach paddle_x
+            time_to_paddle_x = (paddle_x - pos_x) / (dir_x * ball.speed) 
+            if time_to_paddle_x >= 0: 
+                # Compute where the ball would be in Y when it reaches paddle_x
+                y_at_paddle = pos_y + (dir_y * ball.speed * time_to_paddle_x)
+                if 0 <= y_at_paddle <= WINDOW_HEIGHT:
+                    return y_at_paddle # Ball reaches paddle_x without hitting wall
+                else:
+                    # Ball will hit wall before reaching paddle_x
+                    time_to_wall = None
+                    if dir_y > 0:
+                        # Time until hitting bottom wall
+                        time_to_wall = (WINDOW_HEIGHT - pos_y) / (dir_y * ball.speed)
+                    elif dir_y < 0:
+                        # Time until hitting top wall
+                        time_to_wall = -pos_y / (dir_y * ball.speed)
+                    else:
+                        # dir_y == 0 means ball is moving horizontally, so it won't hit walls
+                        return pos_y  # No vertical movement 
+                    pos_x += dir_x * ball.speed * time_to_wall # Move to wall collision point
+                    pos_y += dir_y * ball.speed * time_to_wall # Move to wall collision point
+                    pos_y = max(0, min(WINDOW_HEIGHT, pos_y))  # Clamp
+                    dir_y = -dir_y  # Reflect
+            else:
+                # Ball is moving away from paddle_x; we can either return current pos_y or handle bounce-back logic
+                 return pos_y
+        return pos_y  # Fallback if max_simulation_steps exhausted
 
     def decide(self, paddle, ball, dt, game_state=None):
         """
         Return vertical movement intent using advanced ball trajectory prediction.
-
-        PSEUDOCODE:
-        1. Accumulate elapsed_time += dt
-        2. If elapsed_time < reaction_time: return 0
-        3. Reset elapsed_time
-        4. Call predicted_y = self._simulate_to_paddle_x(paddle.pos.x, ball)
-        5. Add tiny noise: predicted_y += random.uniform(-inaccuracy, inaccuracy) * 10
-        6. Compute delta = predicted_y - paddle.pos.y
-        7. If abs(delta) < small deadzone: return 0
-        8. Return sign(delta)
-
-        Args:
-            paddle: Paddle instance
-            ball: Ball instance
-            dt: Delta time (seconds)
-            game_state: Optional context
-
-        Returns:
-            int: -1, 0, or +1
+        AI algorithm that decides which direction to travel in based on ball position.
         """
-        # TODO: Implement reaction delay
-        # TODO: Simulate ball path including wall bounces
-        # TODO: Add minimal noise and return direction
-        pass
+        # Starts a timer. Paddle doesn't move until reaction time
+        self.elapsed_time += dt
+        if self.elapsed_time < self.reaction_time:
+            return 0
+        self.elapsed_time = 0
+        
+        # Calculate ball position and distance
+        predicted_y = self._simulate_to_paddle_x(paddle.pos.x, ball)
+        predicted_y += random.uniform(-self.inaccuracy, self.inaccuracy) * paddle.rect.height
+        delta = predicted_y - paddle.pos.y
+        # If too close, don't move to reduce jittering
+        if abs(delta) < 5:
+            return 0
+        
+        # Returns the paddles direction
+        if delta < 0:
+            return -1
+        elif delta > 0:
+            return 1
