@@ -70,8 +70,9 @@ class Game:
             # update score surfaces each frame so the display reflects changes
             self.playerScoreSurf = self.font.render(str(self.scoreboard.player), True, pygame.Color('white'))
             self.opponentScoreSurf = self.font.render(str(self.scoreboard.opponent), True, pygame.Color('white'))
-            self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
-            self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
+            # Corrected: opponent score on left, player score on right
+            self.opponentScoreRect = self.opponentScoreSurf.get_rect(midtop=(WINDOW_WIDTH // 4, 10))
+            self.playerScoreRect = self.playerScoreSurf.get_rect(midtop=(WINDOW_WIDTH * 3 // 4, 10))
             self.middleLineSurf.fill(self.middleLineColor)
 
             # Draw everything
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         
         # Run the game and get the winner
         winner = Game(difficulty=difficulty).run()
-        
+        print(winner)
         # Show game over menu
         play_again = game_over_menu(screen, clock, winner)
         if not play_again:

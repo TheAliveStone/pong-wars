@@ -132,18 +132,17 @@ class Ball(pygame.sprite.Sprite):
     def handle_out_of_bounds(self):
         """Detect left/right exit, update score(s) and relaunch from center."""
         if self.rect.left <= 0:
-            # opponent scored — preserve old behavior (relaunch toward right)
+            # Player scored (opponent missed) — relaunch toward opponent (right)
             self.launch(direction_x=1)
-            # keep both scoreboard and legacy attributes in sync
-            self.opponentScore += 1
-            if self.scoreboard and hasattr(self.scoreboard, "opponent_scored"):
-                self.scoreboard.opponent_scored()
-        elif self.rect.right >= WINDOW_WIDTH:
-            # player scored — relaunch toward left
-            self.launch(direction_x=-1)
             self.playerScore += 1
             if self.scoreboard and hasattr(self.scoreboard, "player_scored"):
                 self.scoreboard.player_scored()
+        elif self.rect.right >= WINDOW_WIDTH:
+            # Opponent scored (player missed) — relaunch toward player (left)
+            self.launch(direction_x=-1)
+            self.opponentScore += 1
+            if self.scoreboard and hasattr(self.scoreboard, "opponent_scored"):
+                self.scoreboard.opponent_scored()
 
     def handle_paddle_collision(self):
         """Check for paddle collision and apply bounce, variation and speed increase."""
